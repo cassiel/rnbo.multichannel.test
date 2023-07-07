@@ -107,3 +107,4 @@ dist
 
 # Ignore exported files
 export/*.json
+export/*.license

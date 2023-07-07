@@ -8,13 +8,13 @@ async function setup() {
     // Create gain node and connect it to audio output
     const outputNode = context.createGain();
     outputNode.connect(context.destination);
-    
+
     // Fetch the exported patcher
     let response, patcher;
     try {
         response = await fetch(patchExportURL);
         patcher = await response.json();
-    
+
         if (!window.RNBO) {
             // Load RNBO script dynamically
             // Note that you can skip this by knowing the RNBO version of your patch
@@ -29,8 +29,8 @@ async function setup() {
         if (response && (response.status >= 300 || response.status < 200)) {
             errorContext.header = `Couldn't load patcher export bundle`,
             errorContext.description = `Check app.js to see what file it's trying to load. Currently it's` +
-            ` trying to load "${patchExportURL}". If that doesn't` + 
-            ` match the name of the file you exported from RNBO, modify` + 
+            ` trying to load "${patchExportURL}". If that doesn't` +
+            ` match the name of the file you exported from RNBO, modify` +
             ` patchExportURL in app.js.`;
         }
         if (typeof guardrails === "function") {
@@ -40,7 +40,7 @@ async function setup() {
         }
         return;
     }
-    
+
     // (Optional) Fetch the dependencies
     let dependencies = [];
     try {
@@ -55,6 +55,8 @@ async function setup() {
     let device;
     try {
         device = await RNBO.createDevice({ context, patcher });
+        console.log("OUTPUT CHANNELS:", device.numOutputChannels);
+        document.getElementById("num-channels").appendChild(document.createTextNode("CHANNELS: " + device.numOutputChannels));
     } catch (err) {
         if (typeof guardrails === "function") {
             guardrails({ error: err });
@@ -128,7 +130,7 @@ function makeSliders(device) {
         // params only, the best way to determine if a parameter is top level
         // or not is to exclude parameters with a '/' in them.
         // You can uncomment the following line if you don't want to include subpatcher params
-        
+
         //if (param.id.includes("/")) return;
 
         // Create a label, an input slider and a value display
@@ -214,7 +216,7 @@ function makeInportForm(device) {
     const inportText = document.getElementById("inport-text");
     const inportForm = document.getElementById("inport-form");
     let inportTag = null;
-    
+
     // Device messages correspond to inlets/outlets or inports/outports
     // You can filter for one or the other using the "type" of the message
     const messages = device.messages;
@@ -239,7 +241,7 @@ function makeInportForm(device) {
 
             // Turn the text into a list of numbers (RNBO messages must be numbers, not text)
             const values = inportText.value.split(/\s+/).map(s => parseFloat(s));
-            
+
             // Send the message event to the RNBO device
             let messageEvent = new RNBO.MessageEvent(RNBO.TimeNow, inportTag, values);
             device.scheduleEvent(messageEvent);
@@ -306,24 +308,24 @@ function makeMIDIKeyboard(device) {
                 note, // MIDI Note
                 100 // MIDI Velocity
             ];
-        
+
             let noteOffMessage = [
                 128 + midiChannel, // Code for a note off: 10000000 & midi channel (0-15)
                 note, // MIDI Note
                 0 // MIDI Velocity
             ];
-        
+
             // Including rnbo.min.js (or the unminified rnbo.js) will add the RNBO object
             // to the global namespace. This includes the TimeNow constant as well as
             // the MIDIEvent constructor.
             let midiPort = 0;
             let noteDurationMs = 250;
-        
+
             // When scheduling an event to occur in the future, use the current audio context time
             // multiplied by 1000 (converting seconds to milliseconds) for now.
             let noteOnEvent = new RNBO.MIDIEvent(device.context.currentTime * 1000, midiPort, noteOnMessage);
             let noteOffEvent = new RNBO.MIDIEvent(device.context.currentTime * 1000 + noteDurationMs, midiPort, noteOffMessage);
-        
+
             device.scheduleEvent(noteOnEvent);
             device.scheduleEvent(noteOffEvent);
 
